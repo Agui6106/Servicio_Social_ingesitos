@@ -3,33 +3,15 @@ import time
 import sys
 import glob
 
-def find_first_available_port(self) -> str:
-    """Busca y retorna el primer puerto serie disponible."""
-    if sys.platform.startswith('win'):
-        platform = 'win'
-        ports = [f'COM{i}' for i in range(1, 256)]
-    elif sys.platform.startswith('linux'):
-        platform = 'linux'
-        ports = glob.glob('/dev/tty[A-Za-z]*')
-    elif sys.platform.startswith('darwin'):
-        platform = 'darwin'
-        ports = glob.glob('/dev/tty.*')
-    else:
-        raise EnvironmentError('Plataforma no soportada')
-    for port in ports:
-        early_stop = True if platform == 'win' else False
-        try:
-            s = serial.Serial(port)
-            s.close()
-            print(f"Puerto encontrado: {port}")
-            return port
-        except (OSError, serial.SerialException):
-            if early_stop:
-                break
-            continue
-        
-    raise IOError("No se encontraron puertos seriales disponibles")
+# -- Encontrar los puertos seriales disponibles -- #
+import serial.tools.list_ports
 
+def find_ports() -> list[str]:
+    ports = serial.tools.list_ports.comports()
+    serial_ports = []
+    for port in ports:
+        serial_ports.append(port.device)
+    return serial_ports
 
 class SerialArduino:
     def __init__(self, port: str = None, baudrate: int = 9600, timeout: float = 1):
@@ -75,10 +57,19 @@ class SerialArduino:
             self.ser.close()
             print("Conexión cerrada")
 
-if __name__ == "__main__":
-    arduino = SerialArduino(baudrate=9600)  # Ahora detecta automáticamente si no se da un puerto
+if __name__ == "__main__":    
+    print("Puertos seriales disponibles:")
+    ports = find_ports()
+    
+    for port in ports:
+        print(port)
+    arduino_port = ports[0]
+        
+    arduino = SerialArduino(port=ports[0], baudrate=115200)  # Ahora detecta automáticamente si no se da un puerto
     arduino.send_data("Hola Arduino")
     time.sleep(1)
     response = arduino.read_data()
     print(f"Respuesta: {response}")
     arduino.close()
+    
+    
