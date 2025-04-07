@@ -50,6 +50,15 @@ class SerialArduino:
             response = self.ser.readline().decode('utf-8').strip()
             return response
         return ""
+    
+    def get_command(self):
+        if self.ser.in_waiting > 0:
+            try:
+                return self.ser.readline().decode().strip()
+            except Exception as e:
+                print(f"Error leyendo del puerto serial: {e}")
+                return None
+        return None  # No hay datos
 
     def close(self):
         """Cierra la conexión serial."""
