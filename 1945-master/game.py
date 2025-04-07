@@ -8,7 +8,11 @@ import random
 import sys
 
 from Serial_coms import serial_sensor
-arduino = serial_sensor.SerialArduino(baudrate=9600)
+ports = serial_sensor.find_ports()
+arduino_port = ports[0]
+
+arduino = serial_sensor.SerialArduino(port=arduino_port, baudrate=115200)
+#arduino.connect()
 
 # INITIALIZE PYGAME
 pygame.init()
@@ -75,43 +79,42 @@ class Player(object):
         self.lives = 3
         self.bombs = 3
         # Timer de spawn
-        self.respawn_timer = 0  # Temporizador para el respawn
-        self.is_respawning = False  # Estado de respawn
+        self.respawn_timer = 0
+        self.is_respawning = False
         self.respawn_delay = 5000  
         
     def draw(self, dest): 
         self.anim.pos = self.rect
         self.anim.draw(dest)
- 
+
     def update(self):
-        # respawn
         if self.is_respawning:
             current_time = pygame.time.get_ticks()
-            if current_time - self.respawn_timer >= self.respawn_delay:  # 1000 ms = 1 segundo
+            if current_time - self.respawn_timer >= self.respawn_delay:
                 self.is_respawning = False
-                self.rect.x = 130  # Posición inicial X
-                self.rect.y = 350  # Posición inicial Y
-        
-        #Get the current key state.
-        key = pygame.key.get_pressed()
-        
-        #Move left/right
-        if key[pygame.K_LEFT]:
-            self.rect.x -= 5
-        if key[pygame.K_RIGHT]:
-            self.rect.x += 5
-        if key[pygame.K_UP]:
-            self.rect.y -= 5
-        if key[pygame.K_DOWN]:
-            self.rect.y += 5 
-            
+                self.rect.x = 130
+                self.rect.y = 350
+
         self.draw(screen)
-    
+
+    def move(self, direction):
+        if self.is_respawning:
+            return  # No moverse mientras respawnea
+        if direction == "LEFT":
+            self.rect.x -= 5
+        elif direction == "RIGHT":
+            self.rect.x += 5
+        elif direction == "UP":
+            self.rect.y -= 5
+        elif direction == "DOWN":
+            self.rect.y += 5
+
     def get_respawn_seconds(self):
         if self.is_respawning:
             remaining = max(0, self.respawn_delay - (pygame.time.get_ticks() - self.respawn_timer))
-            return remaining // 1000  # Convierte a segundos
+            return remaining // 1000
         return 0
+
 
 class Explosion(object):
     def __init__(self,type):
@@ -537,6 +540,36 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT or event.type == pygame.K_ESCAPE:
             sys.exit()
+            #arduino.close()
+            
+    # Leer comando del Arduino
+    arduino_command = arduino.get_command()
+        
+    # Ejecutar acciones basadas en el comando
+    if len(players) > 0 and not p1.is_respawning:
+        if arduino_command == "L":
+            p1.move("LEFT")
+        elif arduino_command == "R":
+            p1.move("RIGHT")
+        elif arduino_command == "U":
+            p1.move("UP")
+        elif arduino_command == "D":
+            p1.move("DOWN")
+        elif arduino_command == "S":  # Shot
+            shot_snd.play()
+            create_shot(0, p1.rect.x, p1.rect.y)
+            p1.shots += 1
+            
+    # Reinicio si está en Game Over y Arduino envía comando "R"
+    if arduino_command == "R" and p1.lives <= 0:
+        p1 = Player()
+        players.append(p1)
+        p1.lives = 3
+        p1.score = 0
+
+
+            
+    """
         elif event.type == pygame.KEYDOWN:
             if len(players) > 0:
                 if event.key == pygame.K_SPACE:
@@ -551,7 +584,7 @@ while True:
             p1 = Player()  # Reinicia al jugador
             players.append(p1)
             p1.lives = 3  # Restaura vidas
-            p1.score = 0   # Opcional: resetear puntuación                      
+            p1.score = 0   # Opcional: resetear puntuación           """           
 
     if play_musc == 1:
         pygame.mixer.music.play()
