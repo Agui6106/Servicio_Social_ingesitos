@@ -18,7 +18,7 @@ arduino = serial_sensor.SerialArduino(port=arduino_port, baudrate=115200)
 pygame.init()
 
 # SET WINDOW CAPTION
-pygame.display.set_caption("1945 - Azuki Mix V1.0")
+pygame.display.set_caption("1945 - Azuki Mix V2.0")
 
 # SET WINDOW RESOLUTION
 resolution = (320, 480)
@@ -354,6 +354,8 @@ def check_hit():
                     create_explosion(1, p.rect.x, p.rect.y)  # Explosión del jugador
                     p.lives -= 1  # Reducir una vida
                     shots.remove(f)  # Eliminar el disparo
+                    if arduino and arduino.is_open:
+                        arduino.write(b"D\n")
                     
                     # Si aún hay vidas, reaparecer tras 5 seg
                     if p.lives > 0:
@@ -565,26 +567,7 @@ while True:
         p1 = Player()
         players.append(p1)
         p1.lives = 3
-        p1.score = 0
-
-
-            
-    """
-        elif event.type == pygame.KEYDOWN:
-            if len(players) > 0:
-                if event.key == pygame.K_SPACE:
-                    shot_snd.play()
-                    create_shot(0, p1.rect.x, p1.rect.y)
-                    p1.shots += 1
-                if event.key == pygame.K_LCTRL:
-                    p1.bombs -= 1
-
-            # Reiniciar juego al presionar R (solo en Game Over)
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_r and p1.lives <= 0:
-            p1 = Player()  # Reinicia al jugador
-            players.append(p1)
-            p1.lives = 3  # Restaura vidas
-            p1.score = 0   # Opcional: resetear puntuación           """           
+        p1.score = 0          
 
     if play_musc == 1:
         pygame.mixer.music.play()
