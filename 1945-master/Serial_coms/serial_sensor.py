@@ -3,6 +3,34 @@ import time
 import sys
 import glob
 
+def find_first_available_port(self) -> str:
+    """Busca y retorna el primer puerto serie disponible."""
+    if sys.platform.startswith('win'):
+        platform = 'win'
+        ports = [f'COM{i}' for i in range(1, 256)]
+    elif sys.platform.startswith('linux'):
+        platform = 'linux'
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        platform = 'darwin'
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Plataforma no soportada')
+    for port in ports:
+        early_stop = True if platform == 'win' else False
+        try:
+            s = serial.Serial(port)
+            s.close()
+            print(f"Puerto encontrado: {port}")
+            return port
+        except (OSError, serial.SerialException):
+            if early_stop:
+                break
+            continue
+        
+    raise IOError("No se encontraron puertos seriales disponibles")
+
+
 class SerialArduino:
     def __init__(self, port: str = None, baudrate: int = 9600, timeout: float = 1):
         """
@@ -11,39 +39,11 @@ class SerialArduino:
         :param baudrate: Velocidad de comunicación (por defecto 9600)
         :param timeout: Tiempo de espera para lectura en segundos
         """
-        self.port = port or self.find_first_available_port()
+        self.port = port 
         self.baudrate = baudrate
         self.timeout = timeout
         self.ser = None
         self.connect()
-
-    def find_first_available_port(self) -> str:
-        """Busca y retorna el primer puerto serie disponible."""
-        if sys.platform.startswith('win'):
-            platform = 'win'
-            ports = [f'COM{i}' for i in range(1, 256)]
-        elif sys.platform.startswith('linux'):
-            platform = 'linux'
-            ports = glob.glob('/dev/tty[A-Za-z]*')
-        elif sys.platform.startswith('darwin'):
-            platform = 'darwin'
-            ports = glob.glob('/dev/tty.*')
-        else:
-            raise EnvironmentError('Plataforma no soportada')
-
-        for port in ports:
-            early_stop = True if platform == 'win' else False
-            try:
-                s = serial.Serial(port)
-                s.close()
-                print(f"Puerto encontrado: {port}")
-                return port
-            except (OSError, serial.SerialException):
-                if early_stop:
-                    break
-                continue
-
-        raise IOError("No se encontraron puertos seriales disponibles")
 
     def connect(self):
         """Intenta conectar con el puerto serie."""
