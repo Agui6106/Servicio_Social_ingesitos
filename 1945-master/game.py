@@ -354,8 +354,8 @@ def check_hit():
                     create_explosion(1, p.rect.x, p.rect.y)  # Explosión del jugador
                     p.lives -= 1  # Reducir una vida
                     shots.remove(f)  # Eliminar el disparo
-                    if arduino and arduino.is_open:
-                        arduino.write(b"D\n")
+                    if arduino:
+                        arduino.send_data("D\n")
                     
                     # Si aún hay vidas, reaparecer tras 5 seg
                     if p.lives > 0:
@@ -403,7 +403,7 @@ def create_player():
                     
 # CREATE ENEMIES
 def spawn_enemies():
-    if len(enemies) < 8:
+    if len(enemies) < 6:
         create_enemy()
         
 def check_plane_hit():
